@@ -1,6 +1,7 @@
 import tkinter as tk
 import secrets
 import string
+import pyperclip
 
 def generate_password(length=16):
     alphabet = string.ascii_letters + string.digits + string.punctuation
@@ -32,6 +33,10 @@ class PasswordGeneratorGUI:
         self.password_label = tk.Label(master, text="")
         self.password_label.grid(row=2, column=0, columnspan=2)
 
+        # Create and place copy button
+        self.copy_button = tk.Button(master, text="Copy to Clipboard", command=self.copy_password)
+        self.copy_button.grid(row=3, column=0, columnspan=2)
+
     def generate_password(self):
         # Get password length input
         length = int(self.length_entry.get())
@@ -41,6 +46,13 @@ class PasswordGeneratorGUI:
 
         # Update output label
         self.password_label.config(text="Generated password: " + password)
+
+        # Store password in class variable for later use
+        self.generated_password = password
+
+    def copy_password(self):
+        # Copy generated password to clipboard
+        pyperclip.copy(self.generated_password)
 
 # Create the root window and run the GUI
 root = tk.Tk()
