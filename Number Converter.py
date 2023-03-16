@@ -1,37 +1,42 @@
-# Import necessary modules  
-from tkinter import * 
-from tkinter import messagebox 
-  
-# Create window object 
-window = Tk() 
-  
-# Function to get input from user, call conversion functions  
-# and display the result 
-def convert(): 
-      
-    # Get the value from Entry field  
-    dec_value = int(dec_entry.get()) 
-  
-    bin_value = bin(dec_value) 
-    oct_value = oct(dec_value) 
-    hex_value = hex(dec_value) 
-  
-    # Display the result in message box 
-    messagebox.showinfo("Result", 
-                        "Decimal: " + str(dec_value) +  
-                         "\nBinary: " + str(bin_value)[2::] + 
-                         "\nOctal: " + str(oct_value)[2::] + 
-                         "\nHexadecimal: " + str(hex_value)[2::]) 
-      
-# Designing window for registration 
-label1 = Label(window, text="Enter your Decimal") 
-label1.grid(row=0, column=0) 
-  
-dec_entry = Entry(window) 
-dec_entry.grid(row=0, column=1) 
-  
-# Submit Button 
-Button(window, text="Convert", command=convert).grid(row=1,columnspan=2) 
-  
-# End the loop when window is closed 
-window.mainloop() 
+from tkinter import *
+from tkinter import messagebox
+
+# Create window object
+root = Tk()
+root.title("Decimal to Binary/Octal/Hexadecimal Converter")
+
+# Function to convert decimal to binary, octal, and hexadecimal
+def convert():
+    try:
+        # Get the value from Entry field
+        dec_value = int(dec_entry.get())
+    except ValueError:
+        messagebox.showerror("Error", "Please enter a valid decimal number")
+        return
+
+    # Convert to binary, octal, and hexadecimal
+    bin_value = bin(dec_value)[2:]
+    oct_value = oct(dec_value)[2:]
+    hex_value = hex(dec_value)[2:]
+
+    # Display the result in a label
+    result_label.config(text="Decimal: {}\nBinary: {}\nOctal: {}\nHexadecimal: {}"
+                                 .format(dec_value, bin_value, oct_value, hex_value))
+
+# Designing window for registration
+label1 = Label(root, text="Enter your Decimal:")
+label1.grid(row=0, column=0)
+
+dec_entry = Entry(root)
+dec_entry.grid(row=0, column=1)
+
+# Submit Button
+submit_button = Button(root, text="Convert", command=convert)
+submit_button.grid(row=1, columnspan=2)
+
+# Label to display the result
+result_label = Label(root, text="")
+result_label.grid(row=2, columnspan=2)
+
+# End the loop when window is closed
+root.mainloop()
