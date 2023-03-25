@@ -2,6 +2,7 @@ import tkinter as tk
 import random
 import string
 import pyperclip
+from tkinter import messagebox
 
 class PasswordGeneratorGUI:
     def __init__(self, master):
@@ -35,7 +36,13 @@ class PasswordGeneratorGUI:
 
     def generate_password(self):
         # Get password length input
-        password_length = int(self.length_entry.get())
+        try:
+            password_length = int(self.length_entry.get())
+            if password_length < 1:
+                raise ValueError("Password length must be at least 1.")
+        except ValueError:
+            messagebox.showerror("Error", "Please enter a valid password length.")
+            return
 
         # Generate password
         password_characters = string.ascii_letters + string.digits + string.punctuation
@@ -50,7 +57,9 @@ class PasswordGeneratorGUI:
 
     def copy_password(self):
         # Copy generated password to clipboard
-        pyperclip.copy(self.generated_password)
+        with pyperclip.paste() as cb:
+            pyperclip.copy(self.generated_password)
+        messagebox.showinfo("Success", "Password copied to clipboard.")
 
 # Create the root window and run the GUI
 root = tk.Tk()
