@@ -1,5 +1,4 @@
-from tkinter import *
-from tkinter import messagebox
+from tkinter import Tk, Label, Entry, StringVar, OptionMenu, Button, messagebox
 
 class Converter:
     # Define constants
@@ -9,7 +8,7 @@ class Converter:
     OUTPUT_SYSTEM_LABEL_TEXT = "Output system:"
     CONVERT_BUTTON_TEXT = "Convert"
     RESULT_LABEL_TEXT = "{} in {} = {} in {}"
-    
+
     # Define dictionaries for converting between number systems
     SYSTEMS = {
         "Decimal": 10,
@@ -29,11 +28,12 @@ class Converter:
         "Decimal": lambda x: str(x),
         "Hexadecimal": lambda x: hex(x)[2:]
     }
-    
+
     def __init__(self, master):
+        # Initialize the GUI
         self.master = master
         master.title(self.WINDOW_TITLE)
-        
+
         # Designing window for input and output
         self.input_label = Label(master, text=self.INPUT_LABEL_TEXT)
         self.input_label.grid(row=0, column=0)
@@ -43,15 +43,15 @@ class Converter:
 
         self.input_system_label = Label(master, text=self.INPUT_SYSTEM_LABEL_TEXT)
         self.input_system_label.grid(row=1, column=0)
-        
+
         self.input_system_var = StringVar(master)
         self.input_system_var.set("Decimal")
         self.input_system_menu = OptionMenu(master, self.input_system_var, *self.SYSTEMS.keys())
         self.input_system_menu.grid(row=1, column=1)
-        
+
         self.output_system_label = Label(master, text=self.OUTPUT_SYSTEM_LABEL_TEXT)
         self.output_system_label.grid(row=2, column=0)
-        
+
         self.output_system_var = StringVar(master)
         self.output_system_var.set("Binary")
         self.output_system_menu = OptionMenu(master, self.output_system_var, *self.SYSTEMS.keys())
