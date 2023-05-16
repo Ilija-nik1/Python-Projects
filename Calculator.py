@@ -61,8 +61,10 @@ def calculate(func):
         y = float(entry2.get())
         result = func(x, y)
         result_label.config(text=f"Result: {result}")
-    except ValueError as e:
-        result_label.config(text=str(e))
+    except ValueError:
+        result_label.config(text="Invalid input. Please enter numeric values.")
+    except Exception as e:
+        result_label.config(text=f"An error occurred: {str(e)}")
 
 for i, button in enumerate(operation_buttons):
     button = tk.Button(window, text=button["text"], width=15, command=lambda func=button["function"]: calculate(func))
