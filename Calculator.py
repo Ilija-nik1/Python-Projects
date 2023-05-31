@@ -1,82 +1,107 @@
 import tkinter as tk
 
 # Functions to perform calculations
-def add(x, y):
-    return x + y
+def add():
+    try:
+        x = float(entry.get())
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, str(x) + " + ")
+    except ValueError:
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, "Invalid input")
 
-def subtract(x, y):
-    return x - y
+def subtract():
+    try:
+        x = float(entry.get())
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, str(x) + " - ")
+    except ValueError:
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, "Invalid input")
 
-def multiply(x, y):
-    return x * y
+def multiply():
+    try:
+        x = float(entry.get())
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, str(x) + " * ")
+    except ValueError:
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, "Invalid input")
 
-def divide(x, y):
-    if y == 0:
-        raise ValueError("Cannot divide by zero")
-    return x / y
+def divide():
+    try:
+        x = float(entry.get())
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, str(x) + " / ")
+    except ValueError:
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, "Invalid input")
 
-def power(x, y):
-    return x ** y
+def calculate():
+    try:
+        expression = entry.get()
+        result = eval(expression)
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, str(result))
+    except:
+        entry.delete(0, tk.END)
+        entry.insert(tk.END, "Error")
 
-def square_root(x):
-    if x < 0:
-        raise ValueError("Cannot take square root of negative number")
-    return x ** 0.5
-
-def absolute_value(x):
-    return abs(x)
-
-def modulo(x, y):
-    return x % y
+def clear():
+    entry.delete(0, tk.END)
 
 # Create the GUI window
 window = tk.Tk()
 window.title("Calculator")
 
-# Create the user interface widgets
-label1 = tk.Label(window, text="Enter first number:")
-label1.grid(row=0, column=0, padx=5, pady=5)
-entry1 = tk.Entry(window)
-entry1.grid(row=0, column=1, padx=5, pady=5)
-label2 = tk.Label(window, text="Enter second number:")
-label2.grid(row=1, column=0, padx=5, pady=5)
-entry2 = tk.Entry(window)
-entry2.grid(row=1, column=1, padx=5, pady=5)
+# Create the entry widget
+entry = tk.Entry(window)
+entry.grid(row=0, column=0, columnspan=4, padx=5, pady=5)
+
+# Create the numpad buttons
+numpad_buttons = [
+    {"text": "7", "command": lambda: entry.insert(tk.END, "7")},
+    {"text": "8", "command": lambda: entry.insert(tk.END, "8")},
+    {"text": "9", "command": lambda: entry.insert(tk.END, "9")},
+    {"text": "4", "command": lambda: entry.insert(tk.END, "4")},
+    {"text": "5", "command": lambda: entry.insert(tk.END, "5")},
+    {"text": "6", "command": lambda: entry.insert(tk.END, "6")},
+    {"text": "1", "command": lambda: entry.insert(tk.END, "1")},
+    {"text": "2", "command": lambda: entry.insert(tk.END, "2")},
+    {"text": "3", "command": lambda: entry.insert(tk.END, "3")},
+    {"text": "0", "command": lambda: entry.insert(tk.END, "0")},
+    {"text": ".", "command": lambda: entry.insert(tk.END, ".")},
+]
+
+row = 1
+col = 0
+for button_data in numpad_buttons:
+    button = tk.Button(window, text=button_data["text"], width=5, command=button_data["command"])
+    button.grid(row=row, column=col, padx=5, pady=5)
+    col += 1
+    if col > 2:
+        col = 0
+        row += 1
 
 # Create the operation buttons
 operation_buttons = [
-    {"text": "Add", "function": add},
-    {"text": "Subtract", "function": subtract},
-    {"text": "Multiply", "function": multiply},
-    {"text": "Divide", "function": divide},
-    {"text": "Power", "function": power},
-    {"text": "Square Root", "function": square_root},
-    {"text": "Absolute Value", "function": absolute_value},
-    {"text": "Modulo", "function": modulo},
+    {"text": "+", "command": add},
+    {"text": "-", "command": subtract},
+    {"text": "*", "command": multiply},
+    {"text": "/", "command": divide},
+    {"text": "=", "command": calculate},
 ]
 
-def calculate(func):
-    try:
-        x = float(entry1.get())
-        y = float(entry2.get())
-        result = func(x, y)
-        result_label.config(text=f"Result: {result}")
-    except ValueError:
-        result_label.config(text="Invalid input. Please enter numeric values.")
-    except Exception as e:
-        result_label.config(text=f"An error occurred: {str(e)}")
-
-for i, button in enumerate(operation_buttons):
-    button = tk.Button(window, text=button["text"], width=15, command=lambda func=button["function"]: calculate(func))
-    button.grid(row=i+2, column=0 if i%2==0 else 1, padx=5, pady=5)
-
-# Create the result label
-result_label = tk.Label(window, text="")
-result_label.grid(row=len(operation_buttons)+2, column=0, columnspan=2, padx=5, pady=5)
+row = 1
+col = 3
+for button_data in operation_buttons:
+    button = tk.Button(window, text=button_data["text"], width=5, command=button_data["command"])
+    button.grid(row=row, column=col, padx=5, pady=5)
+    row += 1
 
 # Create the clear button
-clear_button = tk.Button(window, text="Clear", command=lambda: [entry1.delete(0, tk.END), entry2.delete(0, tk.END), result_label.config(text="")])
-clear_button.grid(row=len(operation_buttons)+3, column=0, columnspan=2, padx=5, pady=5)
+clear_button = tk.Button(window, text="C", width=5, command=clear)
+clear_button.grid(row=row, column=col, padx=5, pady=5)
 
 # Run the GUI window
 window.mainloop()
