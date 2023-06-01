@@ -7,7 +7,7 @@ MIN_SIDES = 1
 
 class DiceRollerGUI(tk.Frame):
     def __init__(self, master=None):
-        super().__init__(master)
+        super().__init__(master, bg="#282c34")  # Set the background color to dark gray
         self.master = master
         self.master.title("Dice Roller")
         self.pack(padx=10, pady=10)
@@ -15,18 +15,18 @@ class DiceRollerGUI(tk.Frame):
 
     def create_widgets(self):
         # Create labels and entry widgets
-        self.sides_label = tk.Label(self, text=SIDES_LABEL_TEXT)
-        self.sides_label.grid(row=0, column=0, padx=5, pady=5)
-        self.sides_entry = tk.Entry(self, width=5)
+        self.sides_label = tk.Label(self, text=SIDES_LABEL_TEXT, bg="#282c34", fg="white")  # Set the background color to dark gray and text color to white
+        self.sides_label.grid(row=0, column=0, padx=5, pady=5, sticky="E")
+        self.sides_entry = tk.Entry(self, width=10, bg="white", fg="black")  # Set the background color to white and text color to black
         self.sides_entry.grid(row=0, column=1, padx=5, pady=5)
 
         # Create the Roll button
-        self.roll_button = tk.Button(self, text="Roll", command=self.roll_dice)
+        self.roll_button = tk.Button(self, text="Roll", command=self.roll_dice, bg="#61afef", fg="white")  # Set the background color to blue and text color to white
         self.roll_button.grid(row=0, column=2, padx=5, pady=5)
 
         # Create the result label
-        self.result_label = tk.Label(self, text="")
-        self.result_label.grid(row=1, column=0, columnspan=3, padx=5, pady=5)
+        self.result_label = tk.Label(self, text="", font=("Arial", 14, "bold"), bg="#282c34", fg="white")  # Set the background color to dark gray and text color to white
+        self.result_label.grid(row=1, column=0, columnspan=3, padx=5, pady=10)
 
     def roll_dice(self):
         # Validate user input
