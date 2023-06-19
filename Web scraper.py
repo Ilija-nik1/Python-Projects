@@ -4,6 +4,7 @@ import logging
 import requests
 from bs4 import BeautifulSoup
 
+
 def scrape_data(url, output_filename):
     # Start scraping
     logging.info('Scraping data from %s...', url)
@@ -50,11 +51,20 @@ def scrape_data(url, output_filename):
     logging.info('Data saved to %s', output_filename)
 
 
+def print_data(csv_filename):
+    # Read data from CSV file and print it
+    with open(csv_filename, 'r') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            print(row)
+
+
 if __name__ == '__main__':
     # Command line arguments
     parser = argparse.ArgumentParser(description='Web scraper')
     parser.add_argument('url', type=str, help='URL of the page to scrape')
     parser.add_argument('-o', '--output', type=str, default='data.csv', help='Output filename')
+    parser.add_argument('-p', '--print', action='store_true', help='Print the data after scraping')
     args = parser.parse_args()
 
     # Logging configuration
@@ -66,3 +76,7 @@ if __name__ == '__main__':
 
     # Scrape data
     scrape_data(url, output_filename)
+
+    # Print data if specified
+    if args.print:
+        print_data(output_filename)
