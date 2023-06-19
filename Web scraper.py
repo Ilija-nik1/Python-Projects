@@ -1,68 +1,68 @@
-import requests
-from bs4 import BeautifulSoup
 import csv
 import argparse
 import logging
+import requests
+from bs4 import BeautifulSoup
 
-# Command line arguments
-parser = argparse.ArgumentParser(description='Web scraper')
-parser.add_argument('url', type=str, help='URL of the page to scrape')
-parser.add_argument('-o', '--output', type=str, default='data.csv', help='Output filename')
-args = parser.parse_args()
+def scrape_data(url, output_filename):
+    # Start scraping
+    logging.info('Scraping data from %s...', url)
 
-# URL and output filename
-url = args.url
-output_filename = args.output
+    # Get page
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Check for HTTP errors
+    except requests.RequestException as e:
+        logging.error('Failed to retrieve page: %s', e)
+        exit(1)
 
-# Logging configuration
-logging.basicConfig(level=logging.INFO)
+    # Parse HTML
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-# Start scraping
-logging.info('Scraping data from %s...', url)
+    # Find table
+    table = soup.find('table')
 
-# Get page
-response = requests.get(url)
+    if not table:
+        logging.error('Table not found')
+        exit(1)
 
-# Check for errors
-if response.status_code != 200:
-    print('Failed to load page:', response.status_code)
-    exit()
+    # Find rows
+    rows = table.find_all('tr')
 
-# Parse HTML
-soup = BeautifulSoup(response.text, 'html.parser')
+    if not rows:
+        logging.warning('No rows found in table')
+        exit(1)
 
-# Find table
-table = soup.find('table')
+    # Write data to CSV file
+    with open(output_filename, 'w', newline='') as file:
+        writer = csv.writer(file)
 
-if not table:
-    print('Table not found')
-    exit()
+        for row in rows:
+            cells = row.find_all(['td', 'th'])
 
-# Find rows
-rows = table.findAll('tr')
+            if not cells:
+                logging.warning('No cells found in row: %s', row)
+                continue
 
-if not rows:
-    print('No rows found in table')
-    exit()
+            csv_row = [cell.get_text().strip() for cell in cells]
+            writer.writerow(csv_row)
 
-# Write data to CSV file
-with open(output_filename, 'w', newline='') as file:
-    writer = csv.writer(file)
+    logging.info('Data saved to %s', output_filename)
 
-    for row in rows:
-        csv_row = []
 
-        # Find cells
-        cells = row.findAll(['td', 'th'])
+if __name__ == '__main__':
+    # Command line arguments
+    parser = argparse.ArgumentParser(description='Web scraper')
+    parser.add_argument('url', type=str, help='URL of the page to scrape')
+    parser.add_argument('-o', '--output', type=str, default='data.csv', help='Output filename')
+    args = parser.parse_args()
 
-        if not cells:
-            print('No cells found in row:', row)
-            continue
+    # Logging configuration
+    logging.basicConfig(level=logging.INFO)
 
-        # Add cell data to CSV row
-        for cell in cells:
-            csv_row.append(cell.get_text().strip())
+    # URL and output filename
+    url = args.url
+    output_filename = args.output
 
-        writer.writerow(csv_row)
-
-print('Data saved to', output_filename)
+    # Scrape data
+    scrape_data(url, output_filename)
