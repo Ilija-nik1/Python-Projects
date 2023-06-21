@@ -34,11 +34,25 @@ def plot_boxplot(data, column_name):
     plt.xlabel('Values')
     plt.show()
 
+def plot_scatter(data, x_column, y_column):
+    sns.scatterplot(data=data, x=x_column, y=y_column)
+    plt.title(f'Scatter plot: {x_column} vs {y_column}')
+    plt.xlabel(x_column)
+    plt.ylabel(y_column)
+    plt.show()
+
+def calculate_correlation(data, column1, column2):
+    if column1 not in data.columns or column2 not in data.columns:
+        print("Error: One or both columns not found in the data.")
+        return None
+    correlation = data[column1].corr(data[column2])
+    return correlation
+
 # Read the data from a CSV file
 data = read_data('data.csv')
 
 # Perform data analysis and visualization
-# Example: Calculate the mean, plot a histogram, generate summary statistics, and plot a boxplot
+# Example: Calculate the mean, plot a histogram, generate summary statistics, plot a boxplot, plot a scatter plot, and calculate correlation
 
 if data is not None:
     # Select the column to analyze
@@ -58,3 +72,13 @@ if data is not None:
 
     # Plot a boxplot
     plot_boxplot(data, column_name)
+
+    # Plot a scatter plot
+    x_column = 'x_column'
+    y_column = 'y_column'
+    plot_scatter(data, x_column, y_column)
+
+    # Calculate correlation
+    correlation = calculate_correlation(data, x_column, y_column)
+    if correlation is not None:
+        print(f"Correlation between {x_column} and {y_column}: {correlation}")

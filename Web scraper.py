@@ -59,12 +59,21 @@ def print_data(csv_filename):
             print(row)
 
 
+def count_rows(csv_filename):
+    # Count the number of rows in the CSV file
+    with open(csv_filename, 'r') as file:
+        reader = csv.reader(file)
+        row_count = sum(1 for _ in reader)
+        return row_count
+
+
 if __name__ == '__main__':
     # Command line arguments
     parser = argparse.ArgumentParser(description='Web scraper')
     parser.add_argument('url', type=str, help='URL of the page to scrape')
     parser.add_argument('-o', '--output', type=str, default='data.csv', help='Output filename')
     parser.add_argument('-p', '--print', action='store_true', help='Print the data after scraping')
+    parser.add_argument('-c', '--count', action='store_true', help='Count the number of rows')
     args = parser.parse_args()
 
     # Logging configuration
@@ -80,3 +89,8 @@ if __name__ == '__main__':
     # Print data if specified
     if args.print:
         print_data(output_filename)
+
+    # Count rows if specified
+    if args.count:
+        row_count = count_rows(output_filename)
+        print(f"Number of rows: {row_count}")
