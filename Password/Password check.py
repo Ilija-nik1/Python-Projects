@@ -27,6 +27,7 @@ def check_password_strength(password):
 
     return "Strong"
 
+
 class PasswordStrengthGUI:
     def __init__(self, master):
         self.master = master
@@ -69,6 +70,13 @@ class PasswordStrengthGUI:
 
         # Update output label
         self.password_strength_label.config(text=password_strength)
+
+        # Clear password entry after checking
+        self.password_entry.delete(0, tk.END)
+
+        # Set focus back to the password entry widget
+        self.password_entry.focus_set()
+
 
 # Create the root window and run the GUI
 root = tk.Tk()

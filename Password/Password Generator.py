@@ -60,9 +60,13 @@ class PasswordGeneratorGUI:
         self.generated_password = password
 
     def copy_password(self):
+        # Check if password has been generated
+        if not hasattr(self, 'generated_password') or not self.generated_password:
+            messagebox.showerror("Error", "No password has been generated yet.")
+            return
+
         # Copy generated password to clipboard
-        with pyperclip.paste() as cb:
-            pyperclip.copy(self.generated_password)
+        pyperclip.copy(self.generated_password)
         messagebox.showinfo("Success", "Password copied to clipboard.")
 
 # Create the root window and run the GUI
