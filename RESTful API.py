@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_restful import Api, Resource, reqparse
 from flask_sqlalchemy import SQLAlchemy
 from marshmallow import Schema, fields, ValidationError
@@ -27,8 +27,15 @@ users_schema = UserSchema(many=True)
 # API resources
 class UserResource(Resource):
     def get(self):
-        users = User.query.all()
-        result = users_schema.dump(users)
+        page = request.args.get('page', default=1, type=int)
+        per_page = request.args.get('per_page', default=10, type=int)
+        users = User.query.paginate(page, per_page, error_out=False)
+        result = {
+            'users': users_schema.dump(users.items),
+            'total_pages': users.pages,
+            'current_page': users.page,
+            'total_users': users.total,
+        }
         return result
 
     def post(self):

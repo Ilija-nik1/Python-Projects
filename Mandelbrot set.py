@@ -55,6 +55,17 @@ def onclick(event, n_iterations):
     n_iterations = calculate_mandelbrot_set(width, height, x_min, x_max, y_min, y_max, max_iterations)
     plot_mandelbrot_set(n_iterations, x_min, x_max, y_min, y_max)
 
+def reset_plot():
+    global x_min, x_max, y_min, y_max
+    x_min, x_max = -2, 1
+    y_min, y_max = -1.5, 1.5
+    plt.clf()
+    n_iterations = calculate_mandelbrot_set(width, height, x_min, x_max, y_min, y_max, max_iterations)
+    plot_mandelbrot_set(n_iterations, x_min, x_max, y_min, y_max)
+
+def save_plot(filename):
+    plt.savefig(filename)
+
 # Define the size of the image
 width, height = 1000, 1000
 
@@ -71,6 +82,14 @@ plot_mandelbrot_set(n_iterations, x_min, x_max, y_min, y_max)
 
 # Add a zoom function to the plot
 cid = plt.gcf().canvas.mpl_connect('button_press_event', lambda event: onclick(event, n_iterations))
+
+# Add a reset button to the plot
+button_reset = plt.Button(plt.gca(), 'Reset')
+button_reset.on_clicked(lambda _: reset_plot())
+
+# Add a save button to the plot
+button_save = plt.Button(plt.gca(), 'Save')
+button_save.on_clicked(lambda _: save_plot('mandelbrot.png'))
 
 # Show the plot
 plt.show()

@@ -103,7 +103,7 @@ def check_mod_updates():
         print("No installed mods found.")
         return
 
-    print("Checking for mod updates...")
+    print("Checking for updates...")
     for mod_id, mod_data in config['installed_mods'].items():
         mod_name = mod_data['name']
         mod_version = mod_data['version']
@@ -113,36 +113,57 @@ def check_mod_updates():
         mod_details = response.json()
 
         if mod_details['version'] > mod_version:
-            print(f"Mod '{mod_name}' has an update available (Version {mod_details['version']})")
-        else:
-            print(f"Mod '{mod_name}' is up to date.")
+            print(f"Update available for mod '{mod_name}' (Current version: {mod_version}, Latest version: {mod_details['version']})")
+            print("Run the 'update' command to update the mod.")
+            print("------------------------")
 
-# Function to create a backup of installed mods
-def create_mods_backup():
-    backup_folder = f"mods_backup_{int(time.time())}"
-    backup_path = os.path.join(BACKUP_DIRECTORY, backup_folder)
+# Function to download a file
+def download_file(url, filename):
+    with urllib.request.urlopen(url) as response, open(filename, 'wb') as out_file:
+        total_size = int(response.headers['content-length'])
+        block_size = 1024
+        progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True)
 
+        while True:
+            data = response.read(block_size)
+            if not data:
+                break
+            progress_bar.update(len(data))
+            out_file.write(data)
+
+        progress_bar.close()
+
+# Function to load the configuration file
+def load_config():
+    if not os.path.exists(CONFIG_FILE):
+        return {}
+
+    with open(CONFIG_FILE, 'r') as file:
+        config = json.load(file)
+
+    return config
+
+# Function to save the configuration file
+def save_config(config):
+    with open(CONFIG_FILE, 'w') as file:
+        json.dump(config, file, indent=4)
+
+# Function to update the installed mods in the configuration file
+def update_config(mod_id, mod_name, mod_version):
     config = load_config()
     if 'installed_mods' not in config:
-        print("No installed mods found.")
-        return
+        config['installed_mods'] = {}
 
-    os.makedirs(backup_path, exist_ok=True)
+    config['installed_mods'][mod_id] = {
+        'name': mod_name,
+        'version': mod_version,
+        'enabled': True  # By default, enable the mod after installation
+    }
 
-    print("Creating mods backup...")
-    for mod_id, mod_data in config['installed_mods'].items():
-        mod_name = mod_data['name']
-        mod_file = os.path.join(MODS_DIRECTORY, mod_name)
-        backup_file = os.path.join(backup_path, mod_name)
+    save_config(config)
 
-        if os.path.exists(mod_file):
-            shutil.copy(mod_file, backup_file)
-            print(f"Mod '{mod_name}' backed up successfully.")
-        else:
-            print(f"Mod '{mod_name}' file not found.")
-
-# Function to delete a backup
-def delete_backup(backup_directory):
+# Function to load mods from a backup
+def load_mods_from_backup(backup_directory):
     backup_folders = [folder for folder in os.listdir(backup_directory) if folder.startswith("mods_backup_")]
 
     if not backup_folders:
@@ -153,7 +174,7 @@ def delete_backup(backup_directory):
     for i, folder in enumerate(backup_folders):
         print(f"{i+1}. {folder}")
 
-    choice = input("Enter the number of the backup to delete: ")
+    choice = input("Enter the number of the backup to load: ")
     try:
         choice = int(choice)
         if choice < 1 or choice > len(backup_folders):
@@ -166,128 +187,81 @@ def delete_backup(backup_directory):
     selected_backup = backup_folders[choice - 1]
     backup_folder = os.path.join(backup_directory, selected_backup)
 
-    shutil.rmtree(backup_folder)
-    print("Mods backup deleted successfully.")
+    config = load_config()
+    if 'installed_mods' in config:
+        print("Installed mods already exist. Loading mods from backup will overwrite the existing mods.")
+        confirmation = input("Are you sure you want to continue? (y/n): ")
+        if confirmation.lower() != 'y':
+            print("Aborted.")
+            return
 
-# Function to rename a mod
-def rename_mod(mod_id, new_name):
+    shutil.rmtree(MODS_DIRECTORY)
+    shutil.copytree(backup_folder, MODS_DIRECTORY)
+    print("Mods loaded from backup successfully.")
+
+# Function to enable/disable a mod
+def enable_mod(mod_id, enable=True):
     config = load_config()
     if 'installed_mods' not in config or mod_id not in config['installed_mods']:
         print("Mod is not installed.")
         return
 
     mod_data = config['installed_mods'][mod_id]
-    old_name = mod_data['name']
+    mod_data['enabled'] = enable
+    save_config(config)
 
-    mod_file = os.path.join(MODS_DIRECTORY, old_name)
-    new_mod_file = os.path.join(MODS_DIRECTORY, new_name)
+    mod_status = "enabled" if enable else "disabled"
+    print(f"Mod '{mod_data['name']}' is now {mod_status}.")
 
-    if os.path.exists(mod_file):
-        os.rename(mod_file, new_mod_file)
-        mod_data['name'] = new_name
-        save_config(config)
-        print(f"Mod '{old_name}' renamed to '{new_name}' successfully!")
-    else:
-        print("Mod file not found.")
+# Function to backup installed mods
+def backup_mods(backup_directory):
+    timestamp = time.strftime("%Y%m%d%H%M%S")
+    backup_folder = os.path.join(backup_directory, f"mods_backup_{timestamp}")
+    shutil.copytree(MODS_DIRECTORY, backup_folder)
+    print("Mods backed up successfully.")
 
-# Function to display mod details
-def display_mod_details(mod_id):
-    url = f"https://mod-database.example.com/api/mods/{mod_id}"
-    response = requests.get(url)
-    mod_details = response.json()
-
-    print(f"Mod ID: {mod_details['id']}")
-    print(f"Mod Name: {mod_details['name']}")
-    print(f"Author: {mod_details['author']}")
-    print(f"Description: {mod_details['description']}")
-    print(f"Version: {mod_details['version']}")
-    print(f"Download URL: {mod_details['download_url']}")
-
-# Helper function to download a file
-def download_file(url, filename):
-    response = requests.get(url, stream=True)
-    total_size = int(response.headers.get('content-length', 0))
-    block_size = 1024
-    progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True)
-
-    with open(filename, 'wb') as file:
-        for data in response.iter_content(block_size):
-            progress_bar.update(len(data))
-            file.write(data)
-
-    progress_bar.close()
-
-# Helper function to load configuration from file
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r') as file:
-            return json.load(file)
-    return {}
-
-# Helper function to save configuration to file
-def save_config(config):
-    with open(CONFIG_FILE, 'w') as file:
-        json.dump(config, file)
-
-# Function to display the available commands
-def display_commands():
-    print("Available Commands:")
-    print("1. search <query> - Search for mods")
-    print("2. install <mod_id> - Install a mod")
-    print("3. uninstall <mod_id> - Uninstall a mod")
-    print("4. update <mod_id> - Update a mod")
-    print("5. view - View installed mods")
-    print("6. check - Check for mod updates")
-    print("7. backup - Create a backup of installed mods")
-    print("8. delete <backup_directory> - Delete a mods backup")
-    print("9. rename <mod_id> <new_name> - Rename a mod")
-    print("10. details <mod_id> - Display mod details")
-    print("11. help - Display available commands")
-    print("12. exit - Exit the program")
-
-# Main program loop
+# Main function to handle user commands
 def main():
-    print("Welcome to Mod Manager!")
-    display_commands()
+    if not os.path.exists(MODS_DIRECTORY):
+        os.makedirs(MODS_DIRECTORY)
 
-    while True:
-        command = input("Enter a command: ")
+    if not os.path.exists(BACKUP_DIRECTORY):
+        os.makedirs(BACKUP_DIRECTORY)
 
-        if command.startswith("search"):
-            query = command.split(' ', 1)[1]
-            search_mods(query)
-        elif command.startswith("install"):
-            mod_id = command.split(' ', 1)[1]
-            install_mod(mod_id)
-        elif command.startswith("uninstall"):
-            mod_id = command.split(' ', 1)[1]
-            uninstall_mod(mod_id)
-        elif command.startswith("update"):
-            mod_id = command.split(' ', 1)[1]
-            update_mod(mod_id)
-        elif command == "view":
-            view_installed_mods()
-        elif command == "check":
-            check_mod_updates()
-        elif command == "backup":
-            create_mods_backup()
-        elif command.startswith("delete"):
-            backup_directory = command.split(' ', 1)[1]
-            delete_backup(backup_directory)
-        elif command.startswith("rename"):
-            mod_id, new_name = command.split(' ', 2)[1:]
-            rename_mod(mod_id, new_name)
-        elif command.startswith("details"):
-            mod_id = command.split(' ', 1)[1]
-            display_mod_details(mod_id)
-        elif command == "help":
-            display_commands()
-        elif command == "exit":
-            print("Goodbye!")
-            sys.exit()
-        else:
-            print("Invalid command. Enter 'help' to see the available commands.")
+    command = input("Enter a command (search/install/uninstall/update/view/check_updates/backup/load_mods/enable/disable/exit): ")
 
-# Start the program
+    if command == "search":
+        query = input("Enter a search query: ")
+        search_mods(query)
+    elif command == "install":
+        mod_id = input("Enter the ID of the mod to install: ")
+        install_mod(mod_id)
+    elif command == "uninstall":
+        mod_id = input("Enter the ID of the mod to uninstall: ")
+        uninstall_mod(mod_id)
+    elif command == "update":
+        mod_id = input("Enter the ID of the mod to update: ")
+        update_mod(mod_id)
+    elif command == "view":
+        view_installed_mods()
+    elif command == "check_updates":
+        check_mod_updates()
+    elif command == "backup":
+        backup_mods(BACKUP_DIRECTORY)
+    elif command == "load_mods":
+        load_mods_from_backup(BACKUP_DIRECTORY)
+    elif command == "enable":
+        mod_id = input("Enter the ID of the mod to enable: ")
+        enable_mod(mod_id, enable=True)
+    elif command == "disable":
+        mod_id = input("Enter the ID of the mod to disable: ")
+        enable_mod(mod_id, enable=False)
+    elif command == "exit":
+        sys.exit()
+    else:
+        print("Invalid command.")
+
+# Run the main function
 if __name__ == "__main__":
-    main()
+    while True:
+        main()
