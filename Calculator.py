@@ -1,4 +1,5 @@
 import tkinter as tk
+import math
 
 def handle_button_click(button_text):
     current_input = input_entry.get()
@@ -17,27 +18,66 @@ def handle_operation(operation):
 def calculate():
     try:
         expression = input_entry.get()
-        result = eval(expression)
+        result = evaluate_expression(expression)
         output_entry.config(state=tk.NORMAL)
         output_entry.delete(0, tk.END)
         output_entry.insert(tk.END, str(result))
         output_entry.config(state=tk.DISABLED)
-    except ZeroDivisionError:
-        output_entry.config(state=tk.NORMAL)
-        output_entry.delete(0, tk.END)
-        output_entry.insert(tk.END, "Division by zero")
-        output_entry.config(state=tk.DISABLED)
-    except (SyntaxError, NameError, TypeError):
+    except Exception:
         output_entry.config(state=tk.NORMAL)
         output_entry.delete(0, tk.END)
         output_entry.insert(tk.END, "Invalid expression")
         output_entry.config(state=tk.DISABLED)
+
+def evaluate_expression(expression):
+    try:
+        return eval(expression)
+    except Exception:
+        return "Invalid expression"
 
 def clear():
     input_entry.delete(0, tk.END)
     output_entry.config(state=tk.NORMAL)
     output_entry.delete(0, tk.END)
     output_entry.config(state=tk.DISABLED)
+
+def backspace():
+    current_input = input_entry.get()
+    input_entry.delete(len(current_input) - 1, tk.END)
+
+def calculate_square_root():
+    try:
+        x = float(input_entry.get())
+        result = math.sqrt(x)
+        output_entry.config(state=tk.NORMAL)
+        output_entry.delete(0, tk.END)
+        output_entry.insert(tk.END, str(result))
+        output_entry.config(state=tk.DISABLED)
+    except ValueError:
+        input_entry.delete(0, tk.END)
+        input_entry.insert(tk.END, "Invalid input")
+
+def calculate_power():
+    try:
+        x = float(input_entry.get())
+        result = x ** 2  # You can modify this to use a different power
+        output_entry.config(state=tk.NORMAL)
+        output_entry.delete(0, tk.END)
+        output_entry.insert(tk.END, str(result))
+        output_entry.config(state=tk.DISABLED)
+    except ValueError:
+        input_entry.delete(0, tk.END)
+        input_entry.insert(tk.END, "Invalid input")
+
+def on_key_press(event):
+    if event.char in "1234567890.+-*/":
+        handle_button_click(event.char)
+    elif event.keysym.lower() == "c":
+        clear()
+    elif event.keysym.lower() == "return":
+        calculate()
+    elif event.keysym.lower() == "BackSpace":
+        backspace()
 
 window = tk.Tk()
 window.title("Calculator")
@@ -60,6 +100,7 @@ numpad_buttons = [
     {"text": "3", "command": lambda: handle_button_click("3")},
     {"text": "0", "command": lambda: handle_button_click("0")},
     {"text": ".", "command": lambda: handle_button_click(".")},
+    {"text": "<-", "command": backspace},
 ]
 
 row = 2
@@ -78,6 +119,8 @@ operation_buttons = [
     {"text": "*", "command": lambda: handle_operation("*")},
     {"text": "/", "command": lambda: handle_operation("/")},
     {"text": "=", "command": calculate},
+    {"text": "√", "command": calculate_square_root},
+    {"text": "x^2", "command": calculate_power},
 ]
 
 row = 2
@@ -89,5 +132,7 @@ for button_data in operation_buttons:
 
 clear_button = tk.Button(window, text="C", width=5, command=clear)
 clear_button.grid(row=row, column=col, padx=5, pady=5)
+
+window.bind("<Key>", on_key_press)
 
 window.mainloop()
