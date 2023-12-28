@@ -1,6 +1,15 @@
 import tkinter as tk
 import math
 
+# Safe evaluation function
+def safe_eval(expression):
+    try:
+        # Define safe local variables
+        allowed_locals = {"math": math}
+        return eval(expression, {"__builtins__": {}}, allowed_locals)
+    except Exception as e:
+        raise e
+
 def handle_button_click(button_text):
     current_input = input_entry.get()
     input_entry.delete(0, tk.END)
@@ -34,6 +43,13 @@ def evaluate_expression(expression):
         return eval(expression)
     except Exception:
         return "Invalid expression"
+
+# Updating the evaluate_expression function
+def evaluate_expression(expression):
+    try:
+        return safe_eval(expression)
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 def clear():
     input_entry.delete(0, tk.END)
@@ -121,6 +137,14 @@ operation_buttons = [
     {"text": "=", "command": calculate},
     {"text": "√", "command": calculate_square_root},
     {"text": "x^2", "command": calculate_power},
+]
+
+# Adding more buttons for advanced operations
+advanced_operation_buttons = [
+    # Add more buttons like for trigonometric functions, logarithms, etc.
+    {"text": "sin", "command": lambda: handle_operation("math.sin(")},
+    {"text": "cos", "command": lambda: handle_operation("math.cos(")},
+    {"text": "tan", "command": lambda: handle_operation("math.tan(")},
 ]
 
 row = 2
