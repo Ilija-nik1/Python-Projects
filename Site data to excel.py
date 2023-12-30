@@ -2,79 +2,72 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import concurrent.futures
+import logging
+import time
 
-def get_website_data(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for 4xx and 5xx status codes
-        return url, response.text
-    except requests.exceptions.RequestException as e:
-        print(f"Failed to fetch the website content for '{url}': {e}")
-        return url, None
+# Setting up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def get_website_data(url, user_agent, retries=3, timeout=10):
+    try_count = 0
+    while try_count < retries:
+        try:
+            headers = {'User-Agent': user_agent}
+            response = requests.get(url, headers=headers, timeout=timeout)
+            response.raise_for_status()
+            return url, response.text
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Attempt {try_count + 1} failed for '{url}': {e}")
+            try_count += 1
+            time.sleep(1)  # Backoff before retrying
+    return url, None
 
 def extract_data_from_html(url, html_content, table_class=None):
-    data = []
+    data, headers = [], []
     soup = BeautifulSoup(html_content, 'html.parser')
-
-    # Modify this section according to your website's HTML structure to extract relevant data
-    if table_class:
-        table = soup.find('table', class_=table_class)
-    else:
-        table = soup.find('table')
-
+    table = soup.find('table', class_=table_class) if table_class else soup.find('table')
     if table:
         rows = table.find_all('tr')
         for row in rows:
-            columns = row.find_all(['td', 'th'])  # Consider both table data and table header elements
+            columns = row.find_all(['td', 'th'])
             row_data = [column.get_text(strip=True) for column in columns]
             if row_data:
-                data.append(row_data)
+                if not headers:
+                    headers = row_data
+                else:
+                    data.append(row_data)
+    return url, headers, data
 
-    return url, data
+def save_to_file(data, output_file, file_format='csv'):
+    if not data:
+        logging.warning("No data to save.")
+        return
 
-def save_to_excel(data, output_file):
-    df = pd.DataFrame(data)
-    df.to_excel(output_file, index=False)
-    print(f"Data successfully saved to '{output_file}'")
+    headers = data[0][1]
+    combined_data = [row for _, _, rows in data for row in rows]
+
+    df = pd.DataFrame(combined_data, columns=headers)
+    if file_format == 'csv':
+        df.to_csv(output_file, index=False)
+    else:
+        df.to_excel(output_file, index=False)
+    logging.info(f"Data successfully saved to '{output_file}'")
 
 if __name__ == "__main__":
-    # URLs to scan
-    website_urls = ['https://podrska.callidus.hr/WorkOrder.do?woMode=viewWO&woID=40864#worklogs']
-    output_excel_file = 'website_data.xlsx'
-    table_class_name = 'data-table'  # Replace this with the class name of the table if applicable
+    website_urls = ['https://example.com']
+    output_file = 'website_data.csv'
+    table_class_name = 'data-table'
+    user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
 
-    website_data = []
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        # Fetch website data in parallel using multithreading
-        future_to_url = {executor.submit(get_website_data, url): url for url in website_urls}
-        for future in concurrent.futures.as_completed(future_to_url):
-            url = future_to_url[future]
-            try:
-                website_data.append(future.result())
-            except Exception as e:
-                print(f"An error occurred while processing '{url}': {e}")
+        future_to_url = {executor.submit(get_website_data, url, user_agent): url for url in website_urls}
+        website_data = [future.result() for future in concurrent.futures.as_completed(future_to_url)]
 
-    # Filter out None values (failed requests)
-    website_data = [data for data in website_data if data[1] is not None]
+    website_data = [data for data in website_data if data[1]]
 
-    if not website_data:
-        print("No data retrieved from any website.")
-    else:
-        extracted_data = []
+    if website_data:
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            # Extract data from HTML in parallel using multithreading
             future_to_data = {executor.submit(extract_data_from_html, url, html, table_class_name): url for url, html in website_data}
-            for future in concurrent.futures.as_completed(future_to_data):
-                url = future_to_data[future]
-                try:
-                    extracted_data.append(future.result())
-                except Exception as e:
-                    print(f"An error occurred while extracting data from '{url}': {e}")
+            extracted_data = [future.result() for future in concurrent.futures.as_completed(future_to_data)]
 
-        # Filter out None values (failed data extraction)
-        extracted_data = [data for data in extracted_data if data[1]]
-
-        if extracted_data:
-            save_to_excel(extracted_data, output_excel_file)
-        else:
-            print("No data extracted from any website.")
+        save_to_file(extracted_data, output_file)
