@@ -4,159 +4,125 @@ import math
 # Safe evaluation function
 def safe_eval(expression):
     try:
-        # Define safe local variables
-        allowed_locals = {"math": math}
+        # Add more validation and allowed functions as necessary
+        allowed_locals = {"math": math, "pi": math.pi, "e": math.e}
         return eval(expression, {"__builtins__": {}}, allowed_locals)
-    except Exception as e:
-        raise e
-
-def handle_button_click(button_text):
-    current_input = input_entry.get()
-    input_entry.delete(0, tk.END)
-    input_entry.insert(tk.END, current_input + button_text)
-
-def handle_operation(operation):
-    try:
-        x = float(input_entry.get())
-        input_entry.delete(0, tk.END)
-        input_entry.insert(tk.END, str(x) + " " + operation + " ")
-    except ValueError:
-        input_entry.delete(0, tk.END)
-        input_entry.insert(tk.END, "Invalid input")
-
-def calculate():
-    try:
-        expression = input_entry.get()
-        result = evaluate_expression(expression)
-        output_entry.config(state=tk.NORMAL)
-        output_entry.delete(0, tk.END)
-        output_entry.insert(tk.END, str(result))
-        output_entry.config(state=tk.DISABLED)
-    except Exception:
-        output_entry.config(state=tk.NORMAL)
-        output_entry.delete(0, tk.END)
-        output_entry.insert(tk.END, "Invalid expression")
-        output_entry.config(state=tk.DISABLED)
-
-def evaluate_expression(expression):
-    try:
-        return eval(expression)
-    except Exception:
-        return "Invalid expression"
-
-# Updating the evaluate_expression function
-def evaluate_expression(expression):
-    try:
-        return safe_eval(expression)
     except Exception as e:
         return f"Error: {str(e)}"
 
-def clear():
-    input_entry.delete(0, tk.END)
-    output_entry.config(state=tk.NORMAL)
-    output_entry.delete(0, tk.END)
-    output_entry.config(state=tk.DISABLED)
+class CalculatorApp:
+    def __init__(self, master):
+        self.master = master
+        master.title("Advanced Calculator")
 
-def backspace():
-    current_input = input_entry.get()
-    input_entry.delete(len(current_input) - 1, tk.END)
+        self.input_entry = tk.Entry(master, font=("Arial", 14))
+        self.input_entry.grid(row=0, column=0, columnspan=5, padx=5, pady=5, sticky="nsew")
 
-def calculate_square_root():
-    try:
-        x = float(input_entry.get())
-        result = math.sqrt(x)
-        output_entry.config(state=tk.NORMAL)
-        output_entry.delete(0, tk.END)
-        output_entry.insert(tk.END, str(result))
-        output_entry.config(state=tk.DISABLED)
-    except ValueError:
-        input_entry.delete(0, tk.END)
-        input_entry.insert(tk.END, "Invalid input")
+        self.output_entry = tk.Entry(master, font=("Arial", 14), state=tk.DISABLED)
+        self.output_entry.grid(row=1, column=0, columnspan=5, padx=5, pady=5, sticky="nsew")
 
-def calculate_power():
-    try:
-        x = float(input_entry.get())
-        result = x ** 2  # You can modify this to use a different power
-        output_entry.config(state=tk.NORMAL)
-        output_entry.delete(0, tk.END)
-        output_entry.insert(tk.END, str(result))
-        output_entry.config(state=tk.DISABLED)
-    except ValueError:
-        input_entry.delete(0, tk.END)
-        input_entry.insert(tk.END, "Invalid input")
+        self.create_buttons()
+        master.bind("<Key>", self.on_key_press)
 
-def on_key_press(event):
-    if event.char in "1234567890.+-*/":
-        handle_button_click(event.char)
-    elif event.keysym.lower() == "c":
-        clear()
-    elif event.keysym.lower() == "return":
-        calculate()
-    elif event.keysym.lower() == "BackSpace":
-        backspace()
+    def create_buttons(self):
+        numpad_buttons = ["7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "."]
+        row, col = 2, 0
+        for btn in numpad_buttons:
+            button = tk.Button(self.master, text=btn, font=("Arial", 12),
+                               command=lambda b=btn: self.append_to_input(b))
+            button.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+            col += 1
+            if col > 2:
+                col = 0
+                row += 1
 
-window = tk.Tk()
-window.title("Calculator")
+        operation_buttons = ["+", "-", "*", "/", "=", "√", "x^2", "(", ")", "C", "<-", "sin", "cos", "tan", "log", "exp", "π", "e"]
+        row, col = 2, 3
+        for btn in operation_buttons:
+            button = tk.Button(self.master, text=btn, font=("Arial", 12),
+                               command=lambda b=btn: self.handle_operation(b))
+            button.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+            row += 1
+            if row > 7:
+                row = 2
+                col += 1
 
-input_entry = tk.Entry(window)
-input_entry.grid(row=0, column=0, columnspan=4, padx=5, pady=5)
+        # Make all columns and rows expandable
+        for i in range(5):
+            self.master.grid_columnconfigure(i, weight=1)
+        for i in range(8):
+            self.master.grid_rowconfigure(i, weight=1)
 
-output_entry = tk.Entry(window, state=tk.DISABLED)
-output_entry.grid(row=1, column=0, columnspan=4, padx=5, pady=5)
+    def append_to_input(self, char):
+        current_pos = self.input_entry.index(tk.INSERT)
+        self.input_entry.insert(current_pos, char)
 
-numpad_buttons = [
-    {"text": "7", "command": lambda: handle_button_click("7")},
-    {"text": "8", "command": lambda: handle_button_click("8")},
-    {"text": "9", "command": lambda: handle_button_click("9")},
-    {"text": "4", "command": lambda: handle_button_click("4")},
-    {"text": "5", "command": lambda: handle_button_click("5")},
-    {"text": "6", "command": lambda: handle_button_click("6")},
-    {"text": "1", "command": lambda: handle_button_click("1")},
-    {"text": "2", "command": lambda: handle_button_click("2")},
-    {"text": "3", "command": lambda: handle_button_click("3")},
-    {"text": "0", "command": lambda: handle_button_click("0")},
-    {"text": ".", "command": lambda: handle_button_click(".")},
-    {"text": "<-", "command": backspace},
-]
+    def handle_operation(self, operation):
+        if operation == "C":
+            self.clear()
+        elif operation == "<-":
+            self.backspace()
+        elif operation == "=":
+            self.calculate()
+        elif operation in ["sin", "cos", "tan", "log", "exp"]:
+            self.append_to_input(f"math.{operation}(")
+        elif operation == "π":
+            self.append_to_input("math.pi")
+        elif operation == "e":
+            self.append_to_input("math.e")
+        elif operation in ["+", "-", "*", "/", "(", ")"]:
+            self.append_to_input(operation)
+        elif operation == "√":
+            self.append_to_input("math.sqrt(")
+        elif operation == "x^2":
+            self.append_to_input("**2")
 
-row = 2
-col = 0
-for button_data in numpad_buttons:
-    button = tk.Button(window, text=button_data["text"], width=5, command=button_data["command"])
-    button.grid(row=row, column=col, padx=5, pady=5)
-    col += 1
-    if col > 2:
-        col = 0
-        row += 1
+    def calculate(self):
+        expression = self.input_entry.get()
+        result = safe_eval(expression)
+        self.output_entry.config(state=tk.NORMAL)
+        self.output_entry.delete(0, tk.END)
+        self.output_entry.insert(tk.END, str(result))
+        self.output_entry.config(state=tk.DISABLED)
 
-operation_buttons = [
-    {"text": "+", "command": lambda: handle_operation("+")},
-    {"text": "-", "command": lambda: handle_operation("-")},
-    {"text": "*", "command": lambda: handle_operation("*")},
-    {"text": "/", "command": lambda: handle_operation("/")},
-    {"text": "=", "command": calculate},
-    {"text": "√", "command": calculate_square_root},
-    {"text": "x^2", "command": calculate_power},
-]
+    def clear(self):
+        self.input_entry.delete(0, tk.END)
+        self.output_entry.config(state=tk.NORMAL)
+        self.output_entry.delete(0, tk.END)
+        self.output_entry.config(state=tk.DISABLED)
 
-# Adding more buttons for advanced operations
-advanced_operation_buttons = [
-    # Add more buttons like for trigonometric functions, logarithms, etc.
-    {"text": "sin", "command": lambda: handle_operation("math.sin(")},
-    {"text": "cos", "command": lambda: handle_operation("math.cos(")},
-    {"text": "tan", "command": lambda: handle_operation("math.tan(")},
-]
+    def backspace(self):
+        current_pos = self.input_entry.index(tk.INSERT)
+        if current_pos > 0:
+            self.input_entry.delete(current_pos - 1)
 
-row = 2
-col = 3
-for button_data in operation_buttons:
-    button = tk.Button(window, text=button_data["text"], width=5, command=button_data["command"])
-    button.grid(row=row, column=col, padx=5, pady=5)
-    row += 1
+    def on_key_press(self, event):
+        if event.char in "1234567890.+-*/()":
+            self.append_to_input(event.char)
+        elif event.keysym == "Left":
+            self.move_cursor(-1)
+        elif event.keysym == "Right":
+            self.move_cursor(1)
+        elif event.keysym.lower() == "c":
+            self.clear()
+        elif event.keysym == "Return":
+            self.calculate()
+        elif event.keysym == "BackSpace":
+            self.backspace()
 
-clear_button = tk.Button(window, text="C", width=5, command=clear)
-clear_button.grid(row=row, column=col, padx=5, pady=5)
+    def move_cursor(self, direction):
+        current_pos = self.input_entry.index(tk.INSERT)
+        if direction < 0 and current_pos > 0:
+            self.input_entry.icursor(current_pos - 1)
+        elif direction > 0 and current_pos < len(self.input_entry.get()):
+            self.input_entry.icursor(current_pos + 1)
 
-window.bind("<Key>", on_key_press)
+def main():
+    root = tk.Tk()
+    root.geometry("400x500")
+    app = CalculatorApp(root)
+    root.resizable(True, True)  # Making the window resizable
+    root.mainloop()
 
-window.mainloop()
+if __name__ == "__main__":
+    main()
