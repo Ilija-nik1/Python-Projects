@@ -2,7 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-def calculate_mandelbrot_set(width, height, x_min, x_max, y_min, y_max, max_iterations):
+# Constants
+WIDTH, HEIGHT = 1000, 1000
+DEFAULT_X_MIN, DEFAULT_X_MAX = -2, 1
+DEFAULT_Y_MIN, DEFAULT_Y_MAX = -1.5, 1.5
+DEFAULT_MAX_ITERATIONS = 100
+
+# Colors
+DARK_BLUE, BLUE, PURPLE, RED, ORANGE, YELLOW, WHITE = (
+    'darkblue', 'blue', 'purple', 'red', 'orange', 'yellow', 'white'
+)
+
+def create_mandelbrot_set(width, height, x_min, x_max, y_min, y_max, max_iterations):
     # Create a mesh grid of complex numbers spanning the region of interest
     real_axis = np.linspace(x_min, x_max, width)
     imag_axis = np.linspace(y_min, y_max, height) * 1j
@@ -20,9 +31,12 @@ def calculate_mandelbrot_set(width, height, x_min, x_max, y_min, y_max, max_iter
 
     return n_iterations
 
-def plot_mandelbrot_set(n_iterations, x_min, x_max, y_min, y_max):
+def plot_mandelbrot(n_iterations, x_min, x_max, y_min, y_max):
     # Create a custom colormap to colorize the plot
-    cmap = colors.ListedColormap(['darkblue', 'blue', 'purple', 'red', 'orange', 'yellow', 'white'])
+    cmap = colors.ListedColormap([DARK_BLUE, BLUE, PURPLE, RED, ORANGE, YELLOW, WHITE])
+
+    # Set the background color to black
+    plt.gca().set_facecolor('black')
 
     # Plot the Mandelbrot set using a custom colormap
     plt.imshow(n_iterations.T, cmap=cmap, extent=(x_min, x_max, y_min, y_max))
@@ -38,8 +52,7 @@ def plot_mandelbrot_set(n_iterations, x_min, x_max, y_min, y_max):
     plt.xlim(x_min, x_max)
     plt.ylim(y_min, y_max)
 
-def onclick(event, n_iterations):
-    global x_min, x_max, y_min, y_max
+def zoom_mandelbrot(event, n_iterations, x_min, x_max, y_min, y_max):
     zoom_factor = 0.5
     x_range = x_max - x_min
     y_range = y_max - y_min
@@ -52,44 +65,32 @@ def onclick(event, n_iterations):
     y_min = y_center - y_new_range / 2
     y_max = y_center + y_new_range / 2
     plt.clf()
-    n_iterations = calculate_mandelbrot_set(width, height, x_min, x_max, y_min, y_max, max_iterations)
-    plot_mandelbrot_set(n_iterations, x_min, x_max, y_min, y_max)
+    n_iterations = create_mandelbrot_set(WIDTH, HEIGHT, x_min, x_max, y_min, y_max, DEFAULT_MAX_ITERATIONS)
+    plot_mandelbrot(n_iterations, x_min, x_max, y_min, y_max)
 
-def reset_plot():
-    global x_min, x_max, y_min, y_max
-    x_min, x_max = -2, 1
-    y_min, y_max = -1.5, 1.5
+def reset_plot(event, n_iterations):
     plt.clf()
-    n_iterations = calculate_mandelbrot_set(width, height, x_min, x_max, y_min, y_max, max_iterations)
-    plot_mandelbrot_set(n_iterations, x_min, x_max, y_min, y_max)
+    x_min, x_max, y_min, y_max = DEFAULT_X_MIN, DEFAULT_X_MAX, DEFAULT_Y_MIN, DEFAULT_Y_MAX
+    n_iterations = create_mandelbrot_set(WIDTH, HEIGHT, x_min, x_max, y_min, y_max, DEFAULT_MAX_ITERATIONS)
+    plot_mandelbrot(n_iterations, x_min, x_max, y_min, y_max)
 
-def save_plot(filename):
+def save_plot(event, filename):
     plt.savefig(filename)
 
-# Define the size of the image
-width, height = 1000, 1000
-
-# Set the initial range for the Mandelbrot set
-x_min, x_max = -2, 1
-y_min, y_max = -1.5, 1.5
-
-# Set the maximum number of iterations and calculate the Mandelbrot set
-max_iterations = 100
-n_iterations = calculate_mandelbrot_set(width, height, x_min, x_max, y_min, y_max, max_iterations)
+# Initial setup
+x_min, x_max, y_min, y_max = DEFAULT_X_MIN, DEFAULT_X_MAX, DEFAULT_Y_MIN, DEFAULT_Y_MAX
+n_iterations = create_mandelbrot_set(WIDTH, HEIGHT, x_min, x_max, y_min, y_max, DEFAULT_MAX_ITERATIONS)
 
 # Plot the Mandelbrot set
-plot_mandelbrot_set(n_iterations, x_min, x_max, y_min, y_max)
+plot_mandelbrot(n_iterations, x_min, x_max, y_min, y_max)
 
-# Add a zoom function to the plot
-cid = plt.gcf().canvas.mpl_connect('button_press_event', lambda event: onclick(event, n_iterations))
-
-# Add a reset button to the plot
-button_reset = plt.Button(plt.gca(), 'Reset')
-button_reset.on_clicked(lambda _: reset_plot())
+# Add zoom and reset buttons
+cid_zoom = plt.gcf().canvas.mpl_connect('button_press_event', lambda event: zoom_mandelbrot(event, n_iterations, x_min, x_max, y_min, y_max))
+cid_reset = plt.gcf().canvas.mpl_connect('button_press_event', reset_plot)
 
 # Add a save button to the plot
 button_save = plt.Button(plt.gca(), 'Save')
-button_save.on_clicked(lambda _: save_plot('mandelbrot.png'))
+button_save.on_clicked(lambda _: save_plot(_, 'mandelbrot.png'))
 
 # Show the plot
 plt.show()
