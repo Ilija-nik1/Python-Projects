@@ -1,24 +1,36 @@
 from PIL import Image
 import numpy as np
-from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 import os
+import base64
+import random
+import hashlib
 
 class Steganography:
     def __init__(self, key=None):
         if key:
             self.key = key.encode() if isinstance(key, str) else key
         else:
-            self.key = Fernet.generate_key()
-        self.cipher = Fernet(self.key)
+            self.key = AESGCM.generate_key(bit_length=256)
+        self.nonce = os.urandom(12)  # AES-GCM nonce (12 bytes)
 
     def _encrypt_message(self, message):
-        encrypted_message = self.cipher.encrypt(message.encode())
+        aesgcm = AESGCM(self.key)
+        checksum = hashlib.sha256(message.encode()).digest()
+        encrypted_message = aesgcm.encrypt(self.nonce, message.encode() + checksum, None)
         return ''.join([format(byte, '08b') for byte in encrypted_message])
-    
+
     def _decrypt_message(self, binary_message):
         byte_array = bytearray(int(binary_message[i:i+8], 2) for i in range(0, len(binary_message), 8))
-        encrypted_message = bytes(byte_array)
-        return self.cipher.decrypt(encrypted_message).decode()
+        aesgcm = AESGCM(self.key)
+        decrypted_message = aesgcm.decrypt(self.nonce, bytes(byte_array), None)
+        message, checksum = decrypted_message[:-32], decrypted_message[-32:]
+        if hashlib.sha256(message).digest() != checksum:
+            raise ValueError("Message integrity check failed.")
+        return message.decode()
 
     def encode_message(self, image_path, message, output_image_path):
         image = self._load_image(image_path)
@@ -33,11 +45,13 @@ class Steganography:
         if message_length > len(flat_image_array):
             raise ValueError("Message is too long to be hidden in the image.")
         
-        # Encode the message into the image
-        flat_image_array[:message_length] = [
-            (pixel & 254) | int(bit)
-            for pixel, bit in zip(flat_image_array[:message_length], message_binary)
-        ]
+        # Randomly distribute the message bits in the image
+        indices = list(range(len(flat_image_array)))
+        random.shuffle(indices)
+        selected_indices = indices[:message_length]
+
+        for i, bit in zip(selected_indices, message_binary):
+            flat_image_array[i] = (flat_image_array[i] & 254) | int(bit)
 
         # Reshape and save the new image
         encoded_image_array = flat_image_array.reshape(image_array.shape)
@@ -87,7 +101,7 @@ class Steganography:
 # Example usage
 if __name__ == "__main__":
     # Generate or load a key
-    key = Steganography.load_key('secret.key') if os.path.exists('secret.key') else Fernet.generate_key()
+    key = Steganography.load_key('secret.key') if os.path.exists('secret.key') else AESGCM.generate_key(bit_length=256)
     steg = Steganography(key=key)
 
     # Save the key securely
