@@ -8,14 +8,32 @@ import os
 import base64
 import random
 import hashlib
+import logging
+import getpass
+
+logging.basicConfig(level=logging.INFO)
 
 class Steganography:
-    def __init__(self, key=None):
-        if key:
+    def __init__(self, key=None, password=None, salt=None):
+        if password:
+            self.salt = salt or os.urandom(16)
+            self.key = self._derive_key_from_password(password)
+        elif key:
             self.key = key.encode() if isinstance(key, str) else key
         else:
             self.key = AESGCM.generate_key(bit_length=256)
         self.nonce = os.urandom(12)  # AES-GCM nonce (12 bytes)
+
+    def _derive_key_from_password(self, password):
+        """Derives a key from the password using PBKDF2HMAC."""
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=self.salt,
+            iterations=100000,
+            backend=default_backend()
+        )
+        return kdf.derive(password.encode())
 
     def _encrypt_message(self, message):
         aesgcm = AESGCM(self.key)
@@ -57,7 +75,7 @@ class Steganography:
         encoded_image_array = flat_image_array.reshape(image_array.shape)
         encoded_image = Image.fromarray(encoded_image_array.astype('uint8'))
         encoded_image.save(output_image_path)
-        print(f"Message encoded and saved to {output_image_path}")
+        logging.info(f"Message encoded and saved to {output_image_path}")
 
     def decode_message(self, image_path):
         image = self._load_image(image_path)
@@ -83,16 +101,33 @@ class Steganography:
         except IOError:
             raise ValueError(f"Cannot open the image file {image_path}.")
 
-    def save_key(self, key_path='secret.key'):
-        with open(key_path, 'wb') as key_file:
-            key_file.write(self.key)
-        print(f"Encryption key saved to {key_path}")
+    def save_key(self, key_path='secret.key', password=None):
+        if password:
+            # Encrypt the key with the password before saving
+            aesgcm = AESGCM(self._derive_key_from_password(password))
+            encrypted_key = aesgcm.encrypt(self.nonce, self.key, None)
+            with open(key_path, 'wb') as key_file:
+                key_file.write(encrypted_key)
+            logging.info(f"Encrypted key saved to {key_path}")
+        else:
+            # Save the key as is
+            with open(key_path, 'wb') as key_file:
+                key_file.write(self.key)
+            logging.info(f"Key saved to {key_path}")
 
     @staticmethod
-    def load_key(key_path='secret.key'):
+    def load_key(key_path='secret.key', password=None, salt=None):
         try:
             with open(key_path, 'rb') as key_file:
-                return key_file.read()
+                key_data = key_file.read()
+                if password:
+                    # Decrypt the key with the password
+                    salt = salt or os.urandom(16)
+                    aesgcm = AESGCM(Steganography(password=password, salt=salt).key)
+                    key = aesgcm.decrypt(os.urandom(12), key_data, None)
+                    return key
+                else:
+                    return key_data
         except FileNotFoundError:
             raise FileNotFoundError(f"Key file {key_path} not found.")
         except IOError:
@@ -100,16 +135,18 @@ class Steganography:
 
 # Example usage
 if __name__ == "__main__":
-    # Generate or load a key
-    key = Steganography.load_key('secret.key') if os.path.exists('secret.key') else AESGCM.generate_key(bit_length=256)
-    steg = Steganography(key=key)
+    # Get password from the user for encryption key derivation
+    password = getpass.getpass("Enter password for encryption key: ")
+    
+    # Load existing key or generate new key
+    steg = Steganography(password=password) if os.path.exists('secret.key') else Steganography(password=password)
+    
+    # Save the key securely with password
+    steg.save_key('secret.key', password=password)
 
-    # Save the key securely
-    steg.save_key('secret.key')
-
-    # Encode
+    # Encode message into the image
     steg.encode_message('input_image.png', 'Hello, this is a secret message!', 'encoded_image.png')
 
-    # Decode
+    # Decode the hidden message from the image
     decoded_message = steg.decode_message('encoded_image.png')
     print(f"Decoded message: {decoded_message}")
